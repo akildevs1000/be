@@ -1,0 +1,4 @@
+"employee_id","first_name","last_name", "user_name","email","phone_number","whatsapp_number","phone_relative_number","whatsapp_relative_number","joining_date","department_code","designation_code"
+"1","francis","gill","francis gill","1111111francfifsgill1@dgmail.com","03108559858","03108559858","03108559858","03108559858","2012-08-11",  "1", "1"
+"1","francis","gill","francis gill","2222111franffcisgill2@gmail.com","03108559858","03108559858","03108559858","03108559858","2012-08-11",  "1", "1"
+"1","francis","gill","francis gill","ffxxxx@gmail.com","03108559858","03108559858","03108559858","03108559858","2012-08-11",  "1", "1"
