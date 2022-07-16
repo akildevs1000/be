@@ -13,11 +13,11 @@ class UserController extends Controller
     {
         $model = $this->FilterCompanyList($model, $request);
 
-        $model->whereHas('role', function ($query) {
-            $query->where('name', 'not like', '%company%');
+        $model->whereHas("role",function($q){
+            return $q->where('name', '!=', "company");
         });
 
-        $model->with("role:id,name");
+        $model->with("role");
 
         return $model->paginate($request->per_page);
     }
@@ -44,7 +44,7 @@ class UserController extends Controller
         }
     }
 
-    public function update(User $model, UpdateRequest $request)
+    public function update(User $user, UpdateRequest $request)
     {
         try {
             $data = $request->validated();
@@ -53,7 +53,7 @@ class UserController extends Controller
                 $data["password"] = \Hash::make($data["password"]);
             }
 
-            $record = $model->create($data);
+            $record = $user->update($data);
 
             if ($record) {
                 return $this->response('User successfully updated.', $record, true);
@@ -71,10 +71,10 @@ class UserController extends Controller
         return $User;
     }
 
-    public function destroy(User $model)
+    public function destroy(User $user)
     {
         try {
-            $record = $model->delete();
+            $record = $user->delete();
 
             if ($record) {
                 return $this->response('User successfully deleted.', null, true);

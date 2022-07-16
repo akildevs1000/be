@@ -29,9 +29,7 @@ class AssignPermissionController extends Controller
     }
     public function index(Model $model, Request $request)
     {
-        $model_name = class_basename($model);
-
-        return $this->FilterCompanyList($model, $request, $model_name)->with('role')->paginate($request->per_page);
+        return $this->FilterCompanyList($model, $request)->with('role')->paginate($request->per_page);
     }
 
     public function show(Model $model, $id)
@@ -41,6 +39,10 @@ class AssignPermissionController extends Controller
     public function store(StoreRequest $request, Model $model)
     {
         $data = $request->validated();
+
+        if($request->company_id){
+            $data['company_id'] = $request->company_id;
+        }
 
         $data['permission_names'] = Permission::whereIn('id', $data['permission_ids'])->pluck('name');
 

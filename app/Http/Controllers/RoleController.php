@@ -19,7 +19,11 @@ class RoleController extends Controller
     public function store(StoreRequest $request)
     {
         try {
-            $record = Role::create($request->validated());
+            $data = $request->validated();
+            if($request->company_id){
+                $data['company_id'] = $request->company_id;
+            }
+            $record = Role::create($data);
 
             if ($record) {
                 return $this->response('Role Successfully created.',$record, true);

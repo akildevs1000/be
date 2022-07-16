@@ -34,6 +34,7 @@ class StoreRequest extends FormRequest
             'grace_time_out' => 'required',
             'absent_min_in' => 'required',
             'absent_min_out' => 'required',
+            'off_days' => 'nullable|array',
             'company_id' => 'required'
         ];
     }

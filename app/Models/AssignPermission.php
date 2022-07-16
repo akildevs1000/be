@@ -9,13 +9,6 @@ class AssignPermission extends Model
 {
     protected $guarded = [];
 
-    // protected $appends = ['permissions_array'];
-
-    // public function getPermissionsArrayAttribute()
-    // {
-    //     return Permission::whereIn('id', $this->permissions)->select('id', 'name')->get();
-    // }
-
     protected $casts = [
         'permission_ids' => 'array',
         'permission_names' => 'array',
@@ -27,13 +20,10 @@ class AssignPermission extends Model
         return $this->belongsTo(Role::class);
     }
 
-    // use Illuminate\Database\Eloquent\Builder;
-
     protected static function boot()
     {
         parent::boot();
 
-        // Order by name ASC
         static::addGlobalScope('order', function (Builder $builder) {
             $builder->orderBy('id', 'desc');
         });

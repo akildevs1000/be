@@ -40,7 +40,7 @@ class ScheduleController extends Controller
             }
 
         } catch (\Throwable $th) {
-            //throw $th;
+            throw $th;
         }
     }
 

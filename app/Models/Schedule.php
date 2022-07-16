@@ -13,6 +13,10 @@ class Schedule extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'off_days' => 'array',
+    ];
+
     protected static function boot()
     {
         parent::boot();
