@@ -19,7 +19,7 @@ class SalaryTypeController extends Controller
     {
         try {
 
-            $record = $model->update($request->all());
+            $record = $model->create($request->all());
 
             if ($record) {
                 return $this->response('Salary type successfully added.', null, true);
@@ -33,10 +33,10 @@ class SalaryTypeController extends Controller
 
     }
 
-    public function update(UpdateRequest $request, SalaryType $model)
+    public function update(UpdateRequest $request, SalaryType $salaryType)
     {
         try {
-            $record = $model->update($request->all());
+            $record = $salaryType->update($request->all());
 
             if ($record) {
                 return $this->response('Salary type successfully Updated.', null, true);

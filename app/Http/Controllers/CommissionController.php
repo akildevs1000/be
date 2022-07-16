@@ -45,11 +45,11 @@ class CommissionController extends Controller
         return Commission::whereEmployeeId($id)->get();
     }
 
-    public function update(UpdateRequest $request, Commission $model)
+    public function update(UpdateRequest $request, Commission $commission)
     {
         try {
 
-            $record = $model->update($request->validated());
+            $record = $commission->update($request->validated());
 
             if ($record) {
                 return $this->response('Commission successfully updated.', $record, true);
@@ -62,9 +62,9 @@ class CommissionController extends Controller
         }
         return ;
     }
-    public function destroy(Commission $model)
+    public function destroy(Commission $commission)
     {
-        $record = $model->delete();
+        $record = $commission->delete();
 
         if ($record) {
             return $this->response('Commission successfully deleted.', $record, true);
