@@ -17,7 +17,7 @@ class Employee extends Model
         'created_at' => 'datetime:d-M-y',
     ];
 
-    protected $appends = ['show_joining_date'];
+    protected $appends = ['show_joining_date','edit_joining_date'];
 
     public function user(){
         return $this->belongsTo(User::class);
@@ -47,6 +47,11 @@ class Employee extends Model
     public function getShowJoiningDateAttribute(): string
     {
         return date('d M Y',strtotime($this->joining_date));
+    }
+
+    public function getEditJoiningDateAttribute(): string
+    {
+        return date('Y-m-d',strtotime($this->joining_date));
     }
 
     // use Illuminate\Database\Eloquent\Builder;

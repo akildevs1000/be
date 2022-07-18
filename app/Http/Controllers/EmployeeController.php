@@ -35,71 +35,77 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
+        $user = [
+            'name' => $request->user_name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ];
+
+        $employee = [
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+
+            'phone_number' => $request->phone_number,
+            'whatsapp_number' => $request->whatsapp_number,
+            'phone_relative_number' => $request->phone_relative_number,
+            'whatsapp_relative_number' => $request->whatsapp_relative_number,
+
+            'employee_id' => $request->employee_id,
+            'joining_date' => $request->joining_date,
+            'department_id' => $request->department_id,
+            'designation_id' => $request->designation_id,
+        ];
+
+        if (isset($request->company_id)) {
+            $employee['company_id'] = $request->company_id;
+        }
+
+        if ($request->hasFile('profile_picture')) {
+            $profile_picture = $request->profile_picture->getClientOriginalName();
+            $request->profile_picture->move(public_path('media/employee/profile_picture/'), $profile_picture);
+            $product_image = url('media/employee/profile_picture/' . $profile_picture);
+            $employee['profile_picture'] = $profile_picture;
+        }
+
+
+        DB::beginTransaction();
 
         try {
-            $record = User::create([
-                'name' => $request->user_name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-            ]);
+            $user = User::create($user);
 
-            $arr = [
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-
-                'phone_number' => $request->phone_number,
-                'whatsapp_number' => $request->whatsapp_number,
-                'phone_relative_number' => $request->phone_relative_number,
-                'whatsapp_relative_number' => $request->whatsapp_relative_number,
-
-                'employee_id' => $request->employee_id,
-                'joining_date' => $request->joining_date,
-                'department_id' => $request->department_id,
-                'designation_id' => $request->designation_id,
-
-                'user_id' => $record->id,
-            ];
-
-            if ($request->hasFile('profile_picture')) {
-                $profile_picture = $request->profile_picture->getClientOriginalName();
-                $request->profile_picture->move(public_path('media/employee/profile_picture/'), $profile_picture);
-                $product_image = url('media/employee/profile_picture/' . $profile_picture);
-                $arr['profile_picture'] = $profile_picture;
+            if (!$user) {
+                return $this->response('User cannot add.',null, false);
             }
 
-            if (isset($request->company_id)) {
-                $arr['company_id'] = $request->company_id;
-            }
+            $employee["user_id"] = $user->id;
 
-            $employee = Employee::create($arr);
+            $employee = Employee::create($employee);
+
+            if (!$employee) {
+                return $this->response('Employee cannot add.',null, false);
+            }
 
             $employee->profile_picture = asset('media/employee/profile_picture' . $employee->profile_picture);
 
-            return Response::json([
-                'record' => Employee::with(['user', 'designation', 'department'])->find($employee->id),
-                'message' => 'Company Employee created.',
-                'status' => true,
-            ], 200);
+            DB::commit();
 
-        } catch (\Throwable$th) {
+            return $this->response('Employee successfully created.',null, true);
+
+        } catch (\Throwable $th) {
+            DB::rollBack();
             throw $th;
         }
 
     }
 
-    public function index(Request $request)
+    public function index(Employee $employee, Request $request)
     {
-        return Employee::with(['user', 'designation', 'department'])->orderByDesc('id')->paginate($request->per_page);
+        return $employee->with(['user', 'designation', 'department'])->paginate($request->per_page);
     }
 
-    public function show($id): JsonResponse
+    public function show(Employee $employee)
     {
-        $record = Employee::with(['user', 'designation', 'department'])->where('id', $id)->first();
-        return Response::json([
-            'record' => $record,
-            'status' => true,
-            'message' => null,
-        ], 200);
+        return $employee->with(['user', 'designation', 'department'])->first();
     }
 
     public function update(ModelRequestUpdate $request, $id): JsonResponse
@@ -155,34 +161,27 @@ class EmployeeController extends Controller
     {
         $model = Employee::query();
 
-        $model
-            ->where('id', 'LIKE', "%$key%")
-            ->orWhere('first_name', 'LIKE', "%$key%")
-            ->orWhere('last_name', 'LIKE', "%$key%")
-            ->orWhere('phone_number', 'LIKE', "%$key%")
+        $fields = [
+            'first_name',
+            'last_name',
+            'phone_number',
+            'whatsapp_number',
+            'phone_relative_number',
+            'whatsapp_relative_number',
+            'employee_id',
+            'joining_date',
+            'joining_date',
+            'joining_date',
+            'department' => ['name'],
+            'designation' => ['name'],
+            'user' => ['name','email'],
+        ];
 
-            ->orWhere('whatsapp_number', 'LIKE', "%$key%")
-            ->orWhere('phone_relative_number', 'LIKE', "%$key%")
-            ->orWhere('whatsapp_relative_number', 'LIKE', "%$key%")
-            ->orWhere('employee_id', 'LIKE', "%$key%")
-            ->orWhere('joining_date', 'LIKE', "%$key%")
-            ->orWhere('joining_date', 'LIKE', "%$key%")
-            ->orWhere('joining_date', 'LIKE', "%$key%")
+        $model = $this->process_search($model, $key, $fields);
 
-            ->orWhereHas('department', function ($query) use ($key) {
-                $query->where('name', 'like', '%' . $key . '%');
-            })
+        $model->with(['user', 'department', 'designation']);
 
-            ->orWhereHas('designation', function ($query) use ($key) {
-                $query->where('name', 'like', '%' . $key . '%');
-            })
-
-            ->orWhereHas('user', function ($query) use ($key) {
-                $query->where('name', 'like', '%' . $key . '%');
-                $query->orWhere('email', 'like', '%' . $key . '%');
-            });
-
-        return $model->with(['user', 'department', 'designation'])->orderBy('id', 'desc')->paginate($request->perPage);
+        return $model->paginate($request->perPage);
     }
 
     public function updateEmployee(EmployeeUpdateRequest $request, $id): JsonResponse
@@ -247,7 +246,6 @@ class EmployeeController extends Controller
         $file = $request->file('employees');
         $data = $this->saveFile($file);
 
-
         if (is_array($data) && !$data["status"]) {
             return ["status" => false, "errors" => $data["errors"]];
         }
@@ -256,7 +254,7 @@ class EmployeeController extends Controller
 
         if (array_key_exists("status", $data)) {
             return ["status" => false, "errors" => $data["errors"]];
-        }   
+        }
 
         $success = false;
 
@@ -292,37 +290,31 @@ class EmployeeController extends Controller
 
                     'employee_id' => $data['employee_id'],
                     'joining_date' => $data['joining_date'],
-                    'department_id' => $data['department_code'],
-                    'designation_id' => $data['designation_code'],
 
                     'user_id' => $record->id,
                     'company_id' => $request->company_id,
                 ];
 
-                $employee = Employee::create($arr);
-
-                $success = $employee ? true : false;
+                $success = Employee::create($arr) ? true : false;
 
             }
+
+            if ($success) {
+
+                    return response()->json([
+                        'message' => 'Employee imported successfully.',
+                        'status' => true,
+                    ], 200);
+                }
+
+                return response()->json([
+                    'message' => 'Employee cannot import.',
+                    'status' => true,
+                ], 200);
 
         } catch (\Throwable $th) {
             throw $th;
         }
-
-        if ($success) {
-
-            return response()->json([
-                'message' => 'Employee imported successfully.',
-                'status' => true,
-            ], 200);
-        }
-
-        return response()->json([
-            'message' => 'Employee cannot import.',
-            'status' => true,
-        ], 200);
-
-        // return $this->validateImportData($data);
     }
 
     public function validateImportData($data)
@@ -335,9 +327,7 @@ class EmployeeController extends Controller
             'phone_number' => ['required', 'min:8', 'max:15'],
             'whatsapp_number' => ['required', 'min:8', 'max:15'],
             'employee_id' => ['required'],
-            'joining_date' => ['required', 'date'],
-            'department_code' => ['required'],
-            'designation_code' => ['required'],
+            'joining_date' => ['required', 'date']
         ]);
     }
 
@@ -361,7 +351,18 @@ class EmployeeController extends Controller
 
     public function csvParser($filepath)
     {
-        $columns = ["employee_id", "first_name", "last_name", "user_name", "email", "phone_number", "whatsapp_number", "phone_relative_number", "whatsapp_relative_number", "joining_date", "department_code", "designation_code"];
+        $columns = [
+            "employee_id",
+            "first_name",
+            "last_name",
+            "user_name",
+            "email",
+            "phone_number",
+            "whatsapp_number",
+            "phone_relative_number",
+            "whatsapp_relative_number",
+            "joining_date"
+        ];
 
         $header = null;
         $data = [];
