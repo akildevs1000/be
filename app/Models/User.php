@@ -69,7 +69,7 @@ class User extends Authenticatable
     {
         parent::boot();
 
-        // Order by name ASC
+        // Order by name DESC
         static::addGlobalScope('order', function (Builder $builder) {
             $builder->orderBy('id', 'desc');
         });

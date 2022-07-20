@@ -42,8 +42,6 @@ class ModuleController extends Controller
 
         $model = $this->process_search($model, $key, $fields);
 
-        $model->orderByDesc('id');
-
         return $model->paginate($request->per_page);
     }
 }

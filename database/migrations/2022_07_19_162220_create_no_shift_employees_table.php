@@ -13,12 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('attendance_logs', function (Blueprint $table) {
+        Schema::create('no_shift_employees', function (Blueprint $table) {
             $table->id();
-            $table->string('UserID');
-            $table->string('LogTime');
-            $table->string('DeviceID');
-            $table->string('SerialNumber')->nullable();
+            $table->integer('employee_id');
+            $table->integer('company_id')->default(0);
+            $table->integer('branch_id')->default(0);
             $table->timestamps();
         });
     }
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('attendance_logs');
+        Schema::dropIfExists('no_shift_employees');
     }
 };

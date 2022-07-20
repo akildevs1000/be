@@ -33,6 +33,8 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SalaryTypeController;
 
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\NoShiftEmployeeController;
+
 
 
 
@@ -174,10 +176,11 @@ Route::get('assign-module/nacs', [AssignModuleController::class, 'notAssignedCom
 Route::resource('assign-module', AssignModuleController::class);
 
 // AttendanceLogs
+Route::get('attendance_logs_by_company/{company_id}/search/{key}', [AttendanceLogController::class, 'searchByCompany']);
 Route::apiResource('attendance_logs', AttendanceLogController::class);
 Route::get('attendance_logs/search/{key}', [AttendanceLogController::class, 'search']);
 Route::get('attendance_logs_by_company/{key}', [AttendanceLogController::class, 'logsByCompany']);
-Route::get('attendance_logs_by_company/{company_id}/search/{key}', [AttendanceLogController::class, 'searchByCompany']);
+
 
 // -----------------------Company App-------------------------------
 
@@ -186,6 +189,10 @@ Route::post('/CompanyLogin', [AuthController::class, 'CompanyLogin']);
 
 //  Employee
 Route::apiResource('employee', EmployeeController::class);
+Route::get('employeesByDepartment', [EmployeeController::class, 'employeesByDepartment']);
+Route::get('employeesByDesignation/{key}', [EmployeeController::class, 'employeesByDesignation']);
+Route::get('designationsByDepartment/{key}', [EmployeeController::class, 'designationsByDepartment']);
+
 Route::post('employee/validate', [EmployeeController::class, 'validateEmployee']);
 Route::post('employee/contact/validate', [EmployeeController::class, 'validateContact']);
 Route::post('employee/other/validate', [EmployeeController::class, 'validateOther']);
@@ -217,3 +224,8 @@ Route::apiResource('allowance', AllowanceController::class);
 
 // Commission
 Route::apiResource('commission', CommissionController::class);
+
+// No Shift
+Route::get('no-shift/search/{key}', [NoShiftEmployeeController::class, 'search']);
+Route::post('no-shift/delete/selected', [NoShiftEmployeeController::class, 'deleteSelected']);
+Route::apiResource('no-shift', NoShiftEmployeeController::class);

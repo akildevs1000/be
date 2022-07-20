@@ -8,6 +8,7 @@ use App\Http\Requests\Employee\EmployeeOtherRequest;
 use App\Http\Requests\Employee\EmployeeRequest;
 use App\Http\Requests\Employee\EmployeeUpdateRequest;
 use App\Models\Employee;
+use App\Models\Designation;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,14 +68,13 @@ class EmployeeController extends Controller
             $employee['profile_picture'] = $profile_picture;
         }
 
-
         DB::beginTransaction();
 
         try {
             $user = User::create($user);
 
             if (!$user) {
-                return $this->response('User cannot add.',null, false);
+                return $this->response('User cannot add.', null, false);
             }
 
             $employee["user_id"] = $user->id;
@@ -82,14 +82,14 @@ class EmployeeController extends Controller
             $employee = Employee::create($employee);
 
             if (!$employee) {
-                return $this->response('Employee cannot add.',null, false);
+                return $this->response('Employee cannot add.', null, false);
             }
 
             $employee->profile_picture = asset('media/employee/profile_picture' . $employee->profile_picture);
 
             DB::commit();
 
-            return $this->response('Employee successfully created.',null, true);
+            return $this->response('Employee successfully created.', null, true);
 
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -105,7 +105,40 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee)
     {
-        return $employee->with(['user', 'designation', 'department'])->first();
+        return $employee->whereId($employee->id)->with(['user', 'designation', 'department'])->first();
+    }
+
+    public function employeesByDepartment(Request $request, Employee $model)
+    {
+        $model = $this->FilterCompanyList($model, $request);
+
+        if (!in_array(-1,$request->department_ids)) {
+            $model->whereIn("department_id", $request->department_ids);
+        }
+
+        return $model->select('id', 'first_name', 'last_name')->get();
+    }
+    public function employeesByDesignation($id,Request $request, Employee $model)
+    {
+        $model = $this->FilterCompanyList($model, $request);
+
+        if ($id) {
+            $model->whereDesignationId($id);
+        }
+
+        return $model->select('id', 'first_name', 'last_name')->get();
+    }
+
+
+    public function designationsByDepartment($id,Request $request, Designation $model)
+    {
+        $model = $this->FilterCompanyList($model, $request);
+
+        if ($id) {
+            $model->whereDepartmentId($id);
+        }
+
+        return $model->select('id', 'name')->get();
     }
 
     public function update(ModelRequestUpdate $request, $id): JsonResponse
@@ -174,7 +207,7 @@ class EmployeeController extends Controller
             'joining_date',
             'department' => ['name'],
             'designation' => ['name'],
-            'user' => ['name','email'],
+            'user' => ['name', 'email'],
         ];
 
         $model = $this->process_search($model, $key, $fields);
@@ -258,6 +291,8 @@ class EmployeeController extends Controller
 
         $success = false;
 
+        DB::beginTransaction();
+
         try {
 
             foreach ($data as $data) {
@@ -301,18 +336,21 @@ class EmployeeController extends Controller
 
             if ($success) {
 
-                    return response()->json([
-                        'message' => 'Employee imported successfully.',
-                        'status' => true,
-                    ], 200);
-                }
+                DB::commit();
 
                 return response()->json([
-                    'message' => 'Employee cannot import.',
+                    'message' => 'Employee imported successfully.',
                     'status' => true,
                 ], 200);
+            }
+
+            return response()->json([
+                'message' => 'Employee cannot import.',
+                'status' => true,
+            ], 200);
 
         } catch (\Throwable $th) {
+            DB::rollback();
             throw $th;
         }
     }
@@ -327,7 +365,7 @@ class EmployeeController extends Controller
             'phone_number' => ['required', 'min:8', 'max:15'],
             'whatsapp_number' => ['required', 'min:8', 'max:15'],
             'employee_id' => ['required'],
-            'joining_date' => ['required', 'date']
+            'joining_date' => ['required', 'date', 'date_format:Y-m-d'],
         ]);
     }
 
@@ -361,7 +399,7 @@ class EmployeeController extends Controller
             "whatsapp_number",
             "phone_relative_number",
             "whatsapp_relative_number",
-            "joining_date"
+            "joining_date",
         ];
 
         $header = null;

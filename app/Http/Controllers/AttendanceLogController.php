@@ -13,22 +13,53 @@ class AttendanceLogController extends Controller
         return AttendanceLog::paginate($request->per_page);
     }
 
-    public function logsByCompany(Request $request, $id)
+    public function logsByCompany(AttendanceLog $model, Request $request, $id)
     {
         $device_ids = Device::whereCompanyId($id)->pluck('device_id');
 
-        return AttendanceLog::whereIn('DeviceID',$device_ids)->paginate($request->per_page);
+        $model->query();
+
+        $model = $this->getFilteredData($model, $request->type);
+
+        $model = $model->whereIn('DeviceID',$device_ids);
+
+        return $model->paginate($request->per_page);
+    }
+
+    public function getFilteredData($model, $type)
+    {
+        switch ($type) {
+            case "daily":
+                return $model->whereDate('LogTime', date('Y-m-d'));
+              break;
+            case "monthly":
+                return $model->whereMonth('LogTime', date('m'));
+              break;
+            case "yearly":
+                return $model->whereYear('LogTime', date('Y'));
+                break;
+            default:
+                return $model;
+          }
     }
 
     public function searchByCompany(AttendanceLog $model, Request $request, $company_id, $key)
     {
-        $fields = [ "UserID", "LogTime", "DeviceID", "SerialNumber" ];
+        $model = $model->query();
+        $model->where('UserID', 'LIKE', "%$key%");
+        $model->orWhere('LogTime', 'LIKE', "%$key%");
+        $model->orWhere('DeviceID', 'LIKE', "%$key%");
+        $device_ids = $model->pluck('DeviceID');
 
-        $device_ids = $this->process_search($model->query(), $key, $fields)->pluck('DeviceID');
+        $device = Device::query();
+        $device->whereIn('device_id',$device_ids);
+        $device->where('company_id',$company_id);
+        $device_ids = $device->pluck('device_id');
 
-        $device_ids = Device::whereIn('device_id',$device_ids)->where('company_id',$company_id)->pluck('device_id');
-
-        return $model->whereIn('DeviceID',$device_ids)->paginate($request->per_page);
+        if(count($device_ids) == 0) {
+            $model = AttendanceLog::whereIn('DeviceID',$device_ids);
+        }
+        return $model->paginate($request->per_page);
     }
 
     public function search(AttendanceLog $model, Request $request, $key)

@@ -39,7 +39,7 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $user = User::whereEmail($request->email)->first();
+        $user = User::whereHas("company")->whereEmail($request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -55,7 +55,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
 
-        $user = User::where('email', $request->user()->email)->first();
+        $user = User::with("company")->where('email', $request->user()->email)->first();
 
 		if($user && $user->assigned_permissions){
 			$user->permissions = $user->assigned_permissions->permissions_array;
@@ -63,7 +63,6 @@ class AuthController extends Controller
 		else{
 			$user->permissions = [];
 		}
-        $user->company = Company::whereUserId($user->id)->first() ?? null;
 
 		return response()->json([ 'user' => $user ],200);
 
