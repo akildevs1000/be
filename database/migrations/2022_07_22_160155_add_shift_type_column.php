@@ -13,12 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('no_shift_employees', function (Blueprint $table) {
-            $table->id();
-            $table->integer('employee_id');
-            $table->integer('company_id')->default(0);
-            $table->integer('branch_id')->default(0);
-            $table->timestamps();
+        Schema::table('employees', function (Blueprint $table) {
+            $table->boolean('isAutoShift')->default(1);
         });
     }
 
@@ -29,6 +25,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('no_shift_employees');
+        Schema::table('employees', function (Blueprint $table) {
+            $table->dropColumn('isAutoShift');
+        });
     }
 };

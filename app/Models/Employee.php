@@ -10,6 +10,8 @@ class Employee extends Model
 {
     use HasFactory;
 
+    protected $with = ["user","department","designation"];
+
     protected $guarded = [];
 
     protected $casts = [

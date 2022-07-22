@@ -100,12 +100,12 @@ class EmployeeController extends Controller
 
     public function index(Employee $employee, Request $request)
     {
-        return $employee->with(['user', 'designation', 'department'])->paginate($request->per_page);
+        return $employee->paginate($request->per_page);
     }
 
     public function show(Employee $employee)
     {
-        return $employee->whereId($employee->id)->with(['user', 'designation', 'department'])->first();
+        return $employee->whereId($employee->id)->first();
     }
 
     public function employeesByDepartment(Request $request, Employee $model)
@@ -128,7 +128,6 @@ class EmployeeController extends Controller
 
         return $model->select('id', 'first_name', 'last_name')->get();
     }
-
 
     public function designationsByDepartment($id,Request $request, Designation $model)
     {
@@ -211,8 +210,6 @@ class EmployeeController extends Controller
         ];
 
         $model = $this->process_search($model, $key, $fields);
-
-        $model->with(['user', 'department', 'designation']);
 
         return $model->paginate($request->perPage);
     }
@@ -315,16 +312,16 @@ class EmployeeController extends Controller
                 $record = User::create($iteration);
 
                 $arr = [
-                    'first_name' => $data['first_name'],
-                    'last_name' => $data['last_name'],
+                    'first_name' => trim($data['first_name']),
+                    'last_name' => trim($data['last_name']),
 
-                    'phone_number' => $data['phone_number'],
-                    'whatsapp_number' => $data['whatsapp_number'],
-                    'phone_relative_number' => $data['phone_relative_number'],
-                    'whatsapp_relative_number' => $data['whatsapp_relative_number'],
+                    'phone_number' => trim($data['phone_number']),
+                    'whatsapp_number' => trim($data['whatsapp_number']),
+                    'phone_relative_number' => trim($data['phone_relative_number']),
+                    'whatsapp_relative_number' => trim($data['whatsapp_relative_number']),
 
-                    'employee_id' => $data['employee_id'],
-                    'joining_date' => $data['joining_date'],
+                    'employee_id' => trim($data['employee_id']),
+                    'joining_date' => trim($data['joining_date']),
 
                     'user_id' => $record->id,
                     'company_id' => $request->company_id,

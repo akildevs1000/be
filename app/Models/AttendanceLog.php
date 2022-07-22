@@ -25,4 +25,14 @@ class AttendanceLog extends Model
             $builder->orderBy('id', 'desc');
         });
     }
+
+    public function device()
+    {
+        return $this->belongsTo(Device::class,"DeviceID","device_id");
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class, 'UserID', 'employee_id');
+    }
 }

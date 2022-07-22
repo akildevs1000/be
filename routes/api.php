@@ -33,10 +33,8 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SalaryTypeController;
 
 use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\NoShiftEmployeeController;
 
-
-
+use App\Http\Controllers\CountController;
 
 Route::get('/test', function (Request $request) {
     $orderPackArr = [];
@@ -176,10 +174,10 @@ Route::get('assign-module/nacs', [AssignModuleController::class, 'notAssignedCom
 Route::resource('assign-module', AssignModuleController::class);
 
 // AttendanceLogs
-Route::get('attendance_logs_by_company/{company_id}/search/{key}', [AttendanceLogController::class, 'searchByCompany']);
+Route::get('attendance_logs/{id}/search/{key}', [AttendanceLogController::class, 'AttendanceLogsSearch']);
+Route::get('attendance_logs/{key}', [AttendanceLogController::class, 'AttendanceLogs']);
 Route::apiResource('attendance_logs', AttendanceLogController::class);
-Route::get('attendance_logs/search/{key}', [AttendanceLogController::class, 'search']);
-Route::get('attendance_logs_by_company/{key}', [AttendanceLogController::class, 'logsByCompany']);
+
 
 
 // -----------------------Company App-------------------------------
@@ -225,7 +223,4 @@ Route::apiResource('allowance', AllowanceController::class);
 // Commission
 Route::apiResource('commission', CommissionController::class);
 
-// No Shift
-Route::get('no-shift/search/{key}', [NoShiftEmployeeController::class, 'search']);
-Route::post('no-shift/delete/selected', [NoShiftEmployeeController::class, 'deleteSelected']);
-Route::apiResource('no-shift', NoShiftEmployeeController::class);
+Route::get('/count', CountController ::class);
