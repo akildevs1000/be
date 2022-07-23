@@ -132,6 +132,7 @@ class AttendanceLogController extends Controller
 
         foreach ($group_arr as $key => $value) {
             $arr[] = $this->checkIncheckOut(array_chunk($value, 2));
+
         }
 
 
