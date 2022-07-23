@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceLog;
-use App\Models\Employee;
 use Illuminate\Http\Request;
 
 class AttendanceLogController extends Controller
@@ -27,10 +26,11 @@ class AttendanceLogController extends Controller
             while (($row = fgetcsv($handle, 1000, ',')) !== false) {
 
                 if (!$header) {
-                    $header = join(",", $row);
+                    $header = join(",", $row) . ",company_id";
                     $header = str_replace(" ", "", $header);
                     $header = explode(",", $header);
                 } else {
+                    $row[] = $request->company_id;
                     $data[] = array_combine($header, $row);
                 }
 
@@ -53,7 +53,7 @@ class AttendanceLogController extends Controller
 
         $model->where('attendance_logs.company_id', $id);
 
-        if($request->type){
+        if ($request->type) {
             $model = $this->getFilteredByTimeStamp($model, $request->type);
         }
 
@@ -66,10 +66,10 @@ class AttendanceLogController extends Controller
         $model = $model->query();
 
         $model->where('attendance_logs.company_id', $id);
-        if($request->type){
+        if ($request->type) {
             $model = $this->getFilteredByTimeStamp($model, $request->type);
         }
-        if($key){
+        if ($key) {
             $model = $this->searchWithRelation($model, $key);
         }
         return $this->getLogs($model, $request, $id);
@@ -77,7 +77,7 @@ class AttendanceLogController extends Controller
 
     public function getLogs($model, $request, $id)
     {
-        if($request->no_shift){
+        if ($request->no_shift) {
             return $this->noShift($model, $request, $id);
         }
 
@@ -86,27 +86,10 @@ class AttendanceLogController extends Controller
 
     public function searchWithRelation($model, $key)
     {
-
         $model->WhereHas("employee", function ($q) use ($key) {
             $q->where('employee_id', 'LIKE', "%$key%");
             $q->orWhere('first_name', 'LIKE', "%$key%");
             $q->orWhere('last_name', 'LIKE', "%$key%");
-
-            $q->orWhereHas("department", function ($q) use ($key) {
-                $q->where('name', 'LIKE', "%$key%");
-                $q->orWhere('name', 'LIKE', "%$key%");
-            });
-
-            $q->orWhereHas("designation", function ($q) use ($key) {
-                $q->where('name', 'LIKE', "%$key%");
-                $q->orWhere('name', 'LIKE', "%$key%");
-            });
-
-        });
-
-        $model->orWhereHas("device", function ($q) use ($key) {
-            $q->where('name', 'LIKE', "%$key%");
-            $q->orWhere('location', 'LIKE', "%$key%");
         });
 
         return $model;
@@ -132,18 +115,80 @@ class AttendanceLogController extends Controller
 
     public function noShift($model, $request, $id)
     {
-        $model->select("attendance_logs.*","e.employee_id");
+
+        $model->select(
+            "attendance_logs.id",
+            "attendance_logs.UserID",
+            "attendance_logs.LogTime",
+            "attendance_logs.DeviceID",
+        );
         $model->join('employees as e', 'attendance_logs.UserID', "=", 'e.employee_id');
         $model->where('attendance_logs.company_id', $id);
         $model->where('e.isAutoShift', 0);
-        return $model->with(["employee", "device"])->paginate($request->per_page);
+        // $model->with(["employee","device"]);
+        $data = $model->paginate($request->per_page);
+
+        $group_arr = [];
+
+        foreach ($data as $key => $value) {
+            $group_arr[$value->UserID][] = $value;
+        }
+
+        $m_sum = 0;
+
+        $holder = [];
+
+        foreach ($group_arr as $key => $value) {
+            for ($i = 0; $i < count($value) - 1; $i++) {
+                $to = $value[$i]->LogTime;
+                $from = $value[$i + 1]->LogTime;
+
+                $to = strtotime($to);
+                $from = strtotime($from);
+
+                $current = date("Y-m-d", ($to));
+                $next = date("Y-m-d", ($from));
+
+                if ($current == $next) {
+                    $difference = ($from - $to) / 60;
+                    $m_sum += $difference;
+
+                    $arr[$value[$i]->UserID] = [
+                        "hours_mins" => ["h" => intval($m_sum / 60), "m" => intval($m_sum % 60)],
+                        "m" => $m_sum,
+                        "UserID" => $value[$i]->UserID,
+                        "DeviceID" => $value[$i]->DeviceID,
+                        "employee" => $value[$i]->employee,
+                        "device" => $value[$i]->device,
+
+                    ];
+
+                    // important for debugginh
+
+                    // $arr[]["extras"] = [
+                    //     "h" => intval($difference / 60),
+                    //     "m" => intval($difference % 60),
+                    //     "from" => $value[$i]->LogTime,
+                    //     "to" => $value[$i + 1]->LogTime,
+                    //     "UserID" => $value[$i]->UserID,
+                    // ];
+                }
+
+            }
+            $m_sum = 0;
+
+        }
+
+        return ["data" => array_values($arr), "total" => count($arr), "type" => $request->type];
     }
 
     public function autoShift($model, $request, $id)
     {
-        $model->select("attendance_logs.*","e.employee_id");
+        $model->select("attendance_logs.*");
         $model->join('employees as e', 'attendance_logs.UserID', "=", 'e.employee_id');
-        // return $model->where('e.isAutoShift', 0)->get();
-        return $model->with(["employee", "device"])->paginate($request->per_page);
+        $model->where('attendance_logs.company_id', $id);
+        $model->where('e.isAutoShift', 1);
+        // $model->with(["employee","device"]);
+        return $model->paginate($request->per_page);
     }
 }
