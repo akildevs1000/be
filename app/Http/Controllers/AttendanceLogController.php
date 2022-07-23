@@ -33,7 +33,6 @@ class AttendanceLogController extends Controller
                     $row[] = $request->company_id;
                     $data[] = array_combine($header, $row);
                 }
-
             }
             fclose($handle);
         }
@@ -42,7 +41,7 @@ class AttendanceLogController extends Controller
             AttendanceLog::insert($data);
             unlink(base_path() . "/logs/OXSAI_timedata_DX.csv");
             return AttendanceLog::orderByDesc('id')->paginate($request->per_page);
-        } catch (\Throwable$th) {
+        } catch (\Throwable $th) {
             throw $th;
         }
     }
@@ -101,13 +100,10 @@ class AttendanceLogController extends Controller
         switch ($type) {
             case "daily":
                 return $model->whereDate('LogTime', date('Y-m-d'));
-                break;
             case "monthly":
                 return $model->whereMonth('LogTime', date('m'));
-                break;
             case "yearly":
                 return $model->whereYear('LogTime', date('Y'));
-                break;
             default:
                 return $model;
         }
@@ -134,52 +130,44 @@ class AttendanceLogController extends Controller
             $group_arr[$value->UserID][] = $value;
         }
 
-        $m_sum = 0;
-
-        $holder = [];
-
         foreach ($group_arr as $key => $value) {
-            for ($i = 0; $i < count($value) - 1; $i++) {
-                $to = $value[$i]->LogTime;
-                $from = $value[$i + 1]->LogTime;
-
-                $to = strtotime($to);
-                $from = strtotime($from);
-
-                $current = date("Y-m-d", ($to));
-                $next = date("Y-m-d", ($from));
-
-                if ($current == $next) {
-                    $difference = ($from - $to) / 60;
-                    $m_sum += $difference;
-
-                    $arr[$value[$i]->UserID] = [
-                        "hours_mins" => ["h" => intval($m_sum / 60), "m" => intval($m_sum % 60)],
-                        "m" => $m_sum,
-                        "UserID" => $value[$i]->UserID,
-                        "DeviceID" => $value[$i]->DeviceID,
-                        "employee" => $value[$i]->employee,
-                        "device" => $value[$i]->device,
-
-                    ];
-
-                    // important for debugginh
-
-                    // $arr[]["extras"] = [
-                    //     "h" => intval($difference / 60),
-                    //     "m" => intval($difference % 60),
-                    //     "from" => $value[$i]->LogTime,
-                    //     "to" => $value[$i + 1]->LogTime,
-                    //     "UserID" => $value[$i]->UserID,
-                    // ];
-                }
-
-            }
-            $m_sum = 0;
-
+            $arr[] = $this->checkIncheckOut(array_chunk($value, 2));
         }
 
-        return ["data" => array_values($arr), "total" => count($arr), "type" => $request->type];
+
+        return ["data" => ($arr), "total" => count($arr), "type" => $request->type];
+    }
+
+    public function checkIncheckOut($arr)
+    {
+
+        $new_arr = [];
+        $m_sum = 0;
+
+        foreach ($arr as $a) {
+
+            if (count($a) > 1) {
+                $to = strtotime($a[1]->LogTime);
+                $from = strtotime($a[0]->LogTime);
+
+                $difference = ($to - $from) / 60;
+                $m_sum = $difference;
+
+                $new_arr[] = [
+                    "checkIn" => $a[0]->LogTime,
+                    "checkOut" => $a[1]->LogTime,
+                    "UserID" => $a[1]->UserID,
+                    "DeviceID" => $a[1]->DeviceID,
+                    "date" => date("Y-m-d", ($to)),
+                    "total_hours_mins" => ["h" => intval($m_sum / 60), "m" => intval($m_sum % 60)],
+                    "m" => $difference,
+                    "hour" => $difference / 60
+                ];
+            }
+        }
+        $m_sum = 0;
+
+        return $new_arr;
     }
 
     public function autoShift($model, $request, $id)

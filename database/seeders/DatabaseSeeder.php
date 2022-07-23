@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\AttendanceLog;
+use App\Models\Employee;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -14,6 +16,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        // for ($i=1; $i <= 10; $i++) {
+        //     AttendanceLog::factory(1)->create(["UserId" => $i]);
+        // }
+
+        // Employee::factory(2)->create();
+
+        // return;
+
         $this->call([ MasterSeeder::class ]);
         $this->call([ RoleSeeder::class ]);
         $this->call([ PermissionSeeder::class ]);
