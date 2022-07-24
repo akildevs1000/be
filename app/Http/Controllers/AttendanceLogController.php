@@ -122,53 +122,45 @@ class AttendanceLogController extends Controller
         $model->where('attendance_logs.company_id', $id);
         $model->where('e.isAutoShift', 0);
         // $model->with(["employee","device"]);
-        $data = $model->paginate($request->per_page);
+        $data = $model->get();
 
         $group_arr = [];
 
         foreach ($data as $key => $value) {
-            $group_arr[$value->UserID][] = $value;
+            $group_arr[date("d-M-y", strtotime($value->LogTime))][] = $value;
         }
-
-        foreach ($group_arr as $key => $value) {
-            $arr[] = $this->checkIncheckOut(array_chunk($value, 2));
-
-        }
-
-
-        return ["data" => ($arr), "total" => count($arr), "type" => $request->type];
-    }
-
-    public function checkIncheckOut($arr)
-    {
-
         $new_arr = [];
         $m_sum = 0;
 
-        foreach ($arr as $a) {
 
-            if (count($a) > 1) {
-                $to = strtotime($a[1]->LogTime);
-                $from = strtotime($a[0]->LogTime);
+        foreach ($group_arr as $key => $value) {
+            $arr = array_chunk($value, 2);
+            foreach ($arr as $a) {
+                if (count($a) > 1) {
+                    $to = $a[1]->show_log_time;
+                    $from = $a[0]->show_log_time;
 
-                $difference = ($to - $from) / 60;
-                $m_sum = $difference;
+                    $difference = ($to - $from) / 60;
+                    $m_sum = $difference;
 
-                $new_arr[] = [
-                    "checkIn" => $a[0]->LogTime,
-                    "checkOut" => $a[1]->LogTime,
-                    "UserID" => $a[1]->UserID,
-                    "DeviceID" => $a[1]->DeviceID,
-                    "date" => date("Y-m-d", ($to)),
-                    "total_hours_mins" => ["h" => intval($m_sum / 60), "m" => intval($m_sum % 60)],
-                    "m" => $difference,
-                    "hour" => $difference / 60
-                ];
+                    $new_arr[] = [
+                        "checkIn" => date("d-M-y H:i:s a",($from)),
+                        "checkOut" => date("d-M-y H:i:s a",($to)),
+                        "UserID" => $a[1]->UserID,
+                        "DeviceID" => $a[1]->DeviceID,
+                        "date" => date("Y-m-d", ($to)),
+                        "total_hours_mins" => ["h" => intval($m_sum / 60), "m" => intval($m_sum % 60)],
+                        "m" => $difference,
+                        "hour" => $difference / 60,
+                        "employee" => $a[1]->employee
+                    ];
+                }
             }
-        }
-        $m_sum = 0;
+            $m_sum = 0;
 
-        return $new_arr;
+        }
+
+        return ["data" => ($new_arr), "total" => count($new_arr), "type" => $request->type];
     }
 
     public function autoShift($model, $request, $id)

@@ -12,13 +12,17 @@ class AttendanceLog extends Model
 
     protected $guarded = [];
 
-    protected $appends = [
-        // 'hours'
-    ];
+    protected $appends = ['show_log_time'];
+
 
     protected $casts = [
         // 'LogTime' => 'datetime:d-M-y h:i:s:a',
     ];
+
+    public function getShowLogTimeAttribute()
+    {
+        return strtotime($this->LogTime);
+    }
 
     // protected static function boot()
     // {
@@ -26,7 +30,7 @@ class AttendanceLog extends Model
 
     //     // Order by name ASC
     //     static::addGlobalScope('order', function (Builder $builder) {
-    //         $builder->orderBy('id', 'asc');
+    //         $builder->orderBy('id', 'desc');
     //     });
     // }
 

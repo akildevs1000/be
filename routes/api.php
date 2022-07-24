@@ -35,46 +35,10 @@ use App\Http\Controllers\SalaryTypeController;
 use App\Http\Controllers\ScheduleController;
 
 use App\Http\Controllers\CountController;
+use App\Http\Controllers\DutyOrganizerController;
 
 Route::get('/test', function (Request $request) {
-    $orderPackArr = [];
-    $OrderPackDetail = [];
-
-    foreach ($request->orderPack as $key => $orderPack) {
-        $orderPackArr[] = [
-            'order_id' => 1,
-            'product_id' => $orderPack['productId'],
-            'pack_ref_num' => $orderPack['packRefNum'],
-            'thickness_mm' => $orderPack['thicknessMillimeter'],
-            'measure_unit' => $orderPack['measureUnit'],
-            'price_type' => $orderPack['priceType'],
-            'price' => $orderPack['price'],
-            'total_length_meter' => $orderPack['totalLengthMeter'],
-            'total_cubic_meter' => $orderPack['totalCubicMeter'],
-            'total_cubic_feet' => $orderPack['totalCubicFeet'],
-
-            $OrderPackDetail[] = $orderPack['orderPackDetail']
-        ];
-    }
-
-    $ids = [1,2]; // pluck ids
-
-    $arr = [];
-
-    foreach($OrderPackDetail as $key => $values){
-        foreach($values as $opd){
-            $arr[] = [
-                "order_pack_id" => $ids[$key],
-                "length"=> $opd["length"],
-                "width"=> $opd["width"],
-                "quantity"=> $opd["quantity"],
-                "displayOrder"=> $opd["displayOrder"]
-            ];
-        }
-    }
-
-    return ($arr);
-
+    // code here
 });
 
 // Auth
@@ -184,6 +148,9 @@ Route::apiResource('attendance_logs', AttendanceLogController::class);
 
 // Company Auth
 Route::post('/CompanyLogin', [AuthController::class, 'CompanyLogin']);
+
+Route::post('no-shift-employees/delete/selected', [DutyOrganizerController::class, 'deleteSelected']);
+Route::apiResource('no-shift-employees', DutyOrganizerController::class);
 
 //  Employee
 Route::apiResource('employee', EmployeeController::class);

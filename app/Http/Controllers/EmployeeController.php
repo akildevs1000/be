@@ -7,6 +7,8 @@ use App\Http\Requests\Employee\EmployeeImportRequest;
 use App\Http\Requests\Employee\EmployeeOtherRequest;
 use App\Http\Requests\Employee\EmployeeRequest;
 use App\Http\Requests\Employee\EmployeeUpdateRequest;
+use App\Models\Company;
+use App\Models\CompanyContact;
 use App\Models\Employee;
 use App\Models\Designation;
 use App\Models\User;
@@ -90,12 +92,10 @@ class EmployeeController extends Controller
             DB::commit();
 
             return $this->response('Employee successfully created.', null, true);
-
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
         }
-
     }
 
     public function index(Employee $employee, Request $request)
@@ -112,13 +112,13 @@ class EmployeeController extends Controller
     {
         $model = $this->FilterCompanyList($model, $request);
 
-        if (!in_array(-1,$request->department_ids)) {
+        if (!in_array(-1, $request->department_ids)) {
             $model->whereIn("department_id", $request->department_ids);
         }
 
         return $model->select('id', 'first_name', 'last_name')->get();
     }
-    public function employeesByDesignation($id,Request $request, Employee $model)
+    public function employeesByDesignation($id, Request $request, Employee $model)
     {
         $model = $this->FilterCompanyList($model, $request);
 
@@ -129,7 +129,7 @@ class EmployeeController extends Controller
         return $model->select('id', 'first_name', 'last_name')->get();
     }
 
-    public function designationsByDepartment($id,Request $request, Designation $model)
+    public function designationsByDepartment($id, Request $request, Designation $model)
     {
         $model = $this->FilterCompanyList($model, $request);
 
@@ -140,7 +140,7 @@ class EmployeeController extends Controller
         return $model->select('id', 'name')->get();
     }
 
-    public function update(ModelRequestUpdate $request, $id): JsonResponse
+    public function update(Request $request, $id)
     {
         $data = $request->except(['contact_name', 'contact_no', 'contact_position', 'contact_whatsapp', 'user_name', 'email', 'password_confirmation', 'password']);
         if (isset($request->password)) {
@@ -164,8 +164,7 @@ class EmployeeController extends Controller
             }
             User::find($record->user_id)->update($user);
             DB::commit();
-
-        } catch (\Throwable$th) {
+        } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
         }
@@ -186,7 +185,6 @@ class EmployeeController extends Controller
         } else {
             return Response::json(['message' => 'No such record found.'], 404);
         }
-
     }
 
     public function search(Request $request, $key)
@@ -247,7 +245,6 @@ class EmployeeController extends Controller
             'message' => 'Employee Successfully Updated.',
             'status' => true,
         ], 200);
-
     }
 
     public function updateContact(Employee $model, Request $request, $id): JsonResponse
@@ -328,7 +325,6 @@ class EmployeeController extends Controller
                 ];
 
                 $success = Employee::create($arr) ? true : false;
-
             }
 
             if ($success) {
@@ -345,7 +341,6 @@ class EmployeeController extends Controller
                 'message' => 'Employee cannot import.',
                 'status' => true,
             ], 200);
-
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
@@ -414,7 +409,6 @@ class EmployeeController extends Controller
                             "errors" => ["header mismatch"],
                         ];
                     }
-
                 } else {
                     if (count($header) != count($row)) {
                         return [
@@ -426,7 +420,6 @@ class EmployeeController extends Controller
 
                     $data[] = array_combine($header, $row);
                 }
-
             }
             fclose($filedata);
         }
