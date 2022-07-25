@@ -121,46 +121,44 @@ class AttendanceLogController extends Controller
         $model->join('employees as e', 'attendance_logs.UserID', "=", 'e.employee_id');
         $model->where('attendance_logs.company_id', $id);
         $model->where('e.isAutoShift', 0);
-        // $model->with(["employee","device"]);
-        $data = $model->get();
+        $model->with(["employee"]);
+        $data = $model->get()->groupBy("UserID")->toArray();
+        // return array_values($data);
 
-        $group_arr = [];
+        $data = $this->setData($data);
+        return ["data" => array_values($data), "total" => count($data), "type" => $request->type];
+    }
 
-        foreach ($data as $key => $value) {
-            $group_arr[date("d-M-y", strtotime($value->LogTime))][] = $value;
-        }
-        $new_arr = [];
-        $m_sum = 0;
+    public function setData($data)
+    {
 
+        $fomatted_array = [];
 
-        foreach ($group_arr as $key => $value) {
-            $arr = array_chunk($value, 2);
-            foreach ($arr as $a) {
-                if (count($a) > 1) {
-                    $to = $a[1]->show_log_time;
-                    $from = $a[0]->show_log_time;
-
+        foreach ($data as $value) {
+            foreach (array_chunk($value, 2) as $chunk) {
+                if (count($chunk) > 1) {
+                    $to = $chunk[1]["show_log_time"];
+                    $from = $chunk[0]["show_log_time"];
                     $difference = ($to - $from) / 60;
-                    $m_sum = $difference;
-
-                    $new_arr[] = [
-                        "checkIn" => date("d-M-y H:i:s a",($from)),
-                        "checkOut" => date("d-M-y H:i:s a",($to)),
-                        "UserID" => $a[1]->UserID,
-                        "DeviceID" => $a[1]->DeviceID,
+                    $fomatted_array[] = [
+                        "checkIn" => date("d-M-y H:i:s a", ($from)),
+                        "checkOut" => date("d-M-y H:i:s a", ($to)),
+                        "UserID" => $chunk[1]["UserID"],
+                        "DeviceID" => $chunk[1]["DeviceID"],
                         "date" => date("Y-m-d", ($to)),
-                        "total_hours_mins" => ["h" => intval($m_sum / 60), "m" => intval($m_sum % 60)],
+                        "total_hours_mins" => ["h" => intval($difference / 60), "m" => intval($difference % 60)],
                         "m" => $difference,
                         "hour" => $difference / 60,
-                        "employee" => $a[1]->employee
+                        "employee" => $chunk[0]["employee"]
                     ];
                 }
             }
-            $m_sum = 0;
-
         }
 
-        return ["data" => ($new_arr), "total" => count($new_arr), "type" => $request->type];
+        arsort($fomatted_array);
+
+
+        return array_values($fomatted_array);
     }
 
     public function autoShift($model, $request, $id)

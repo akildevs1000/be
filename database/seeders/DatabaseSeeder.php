@@ -16,19 +16,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // for ($i=1; $i <= 10; $i++) {
-        //     AttendanceLog::factory(1)->create(["UserId" => $i]);
-        // }
+        $start = strtotime("10 april 2022");
+        $end = strtotime("01 aug 2022");
 
-        // Employee::factory(2)->create();
+        $ids = Employee::pluck("employee_id");
 
-        // return;
+        foreach ($ids as $id) {
+            $date_range = mt_rand($start, $end);
+            $date = date("Y-m-d H:i:s", $date_range);
 
-        $this->call([ MasterSeeder::class ]);
-        $this->call([ RoleSeeder::class ]);
-        $this->call([ PermissionSeeder::class ]);
-        $this->call([ DeviceStatusSeeder::class ]);
-        $this->call([ CompanySeeder::class ]);
+            $employee = AttendanceLog::create([
+                "UserID" => $id,
+                "DeviceID" => "OX-8862021010011",
+                "LogTime" => $date,
+                "company_id" => 1
+            ]);
+        }
+
+
+        // $this->call([ MasterSeeder::class ]);
+        // $this->call([ RoleSeeder::class ]);
+        // $this->call([ PermissionSeeder::class ]);
+        // $this->call([ DeviceStatusSeeder::class ]);
+        // $this->call([ CompanySeeder::class ]);
 
         // \App\Models\User::factory(10)->create();
 
