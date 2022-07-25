@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceLog;
+use App\Models\Employee;
+use App\Models\Schedule;
+use Faker\Calculator\Ean;
 use Illuminate\Http\Request;
 
 class AttendanceLogController extends Controller
@@ -111,7 +114,6 @@ class AttendanceLogController extends Controller
 
     public function noShift($model, $request, $id)
     {
-
         $model->select(
             "attendance_logs.id",
             "attendance_logs.UserID",
@@ -120,17 +122,59 @@ class AttendanceLogController extends Controller
         );
         $model->join('employees as e', 'attendance_logs.UserID', "=", 'e.employee_id');
         $model->where('attendance_logs.company_id', $id);
+        if ($request->employee_id) {
+            $model->where('e.employee_id', $request->employee_id);
+        }
         $model->where('e.isAutoShift', 0);
         $model->with(["employee"]);
         $data = $model->get()->groupBy("UserID")->toArray();
-        // return array_values($data);
 
         $data = $this->setData($data);
         return ["data" => array_values($data), "total" => count($data), "type" => $request->type];
     }
 
+    public function autoShift($model, $request, $id)
+    {
+        $model->select(
+            "attendance_logs.id",
+            "attendance_logs.UserID",
+            "attendance_logs.LogTime",
+            "attendance_logs.DeviceID",
+        );
+        $model->join('employees as e', 'attendance_logs.UserID', "=", 'e.employee_id');
+        $model->where('attendance_logs.company_id', $id);
+        if ($request->employee_id) {
+            $model->where('e.employee_id', $request->employee_id);
+        }
+        $model->where('e.isAutoShift', 1);
+        // $model->with(["employee"]);
+        $data = $model->get()->groupBy("UserID")->toArray();
+
+        $schedules = Schedule::orderBy("id", "asc")->get();
+
+        $assignedSchedules = [];
+
+        foreach ($data as $key => $values) {
+
+            $checkIn_time = $values[0]["show_log_time"];
+
+            foreach ($schedules as $schedule) {
+                $schedule_time = strtotime($schedule->time_in); //11:00
+                if ($checkIn_time < $schedule_time) {
+                    $assignedSchedules[$key] = [$schedule, $values];
+                    break;
+                }
+            }
+        }
+        return $assignedSchedules;
+
+        $data = $this->setData($assignedSchedules);
+        return ["data" => array_values($data), "total" => count($data), "type" => $request->type];
+    }
+
     public function setData($data)
     {
+
 
         $fomatted_array = [];
 
@@ -139,16 +183,14 @@ class AttendanceLogController extends Controller
                 if (count($chunk) > 1) {
                     $to = $chunk[1]["show_log_time"];
                     $from = $chunk[0]["show_log_time"];
-                    $difference = ($to - $from) / 60;
+
                     $fomatted_array[] = [
                         "checkIn" => date("d-M-y H:i:s a", ($from)),
                         "checkOut" => date("d-M-y H:i:s a", ($to)),
                         "UserID" => $chunk[1]["UserID"],
                         "DeviceID" => $chunk[1]["DeviceID"],
                         "date" => date("Y-m-d", ($to)),
-                        "total_hours_mins" => ["h" => intval($difference / 60), "m" => intval($difference % 60)],
-                        "m" => $difference,
-                        "hour" => $difference / 60,
+                        "difference" => (($to - $from) / 60),
                         "employee" => $chunk[0]["employee"]
                     ];
                 }
@@ -157,17 +199,6 @@ class AttendanceLogController extends Controller
 
         arsort($fomatted_array);
 
-
         return array_values($fomatted_array);
-    }
-
-    public function autoShift($model, $request, $id)
-    {
-        $model->select("attendance_logs.*");
-        $model->join('employees as e', 'attendance_logs.UserID', "=", 'e.employee_id');
-        $model->where('attendance_logs.company_id', $id);
-        $model->where('e.isAutoShift', 1);
-        // $model->with(["employee","device"]);
-        return $model->paginate($request->per_page);
     }
 }
